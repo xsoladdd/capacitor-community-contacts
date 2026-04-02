@@ -30,4 +30,14 @@ export class ContactsWeb extends WebPlugin implements Definitions.ContactsPlugin
   async pickContact(): Promise<Definitions.PickContactResult> {
     throw this.unimplemented('Not implemented on web.');
   }
+
+  async requestLimitedContactsAccess(): Promise<Definitions.RequestLimitedContactsAccessResult> {
+    throw this.unimplemented('Not implemented on web.');
+  }
+
+  async isLimitedContactsAccessSupported(): Promise<Definitions.IsLimitedContactsAccessSupportedResult> {
+    return {
+      supported: false,
+    };
+  }
 }

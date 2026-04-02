@@ -98,6 +98,36 @@ pickContact(options: PickContactOptions) => Promise<PickContactResult>
 --------------------
 
 
+### requestLimitedContactsAccess()
+
+```typescript
+requestLimitedContactsAccess() => Promise<RequestLimitedContactsAccessResult>
+```
+
+Shows the contact access picker to request access to additional contacts.
+Only available on iOS 18+.
+
+Returns an array of full contact objects that the user granted access to.
+
+**Returns:** <code>Promise&lt;[RequestLimitedContactsAccessResult](#requestlimitedcontactsaccessresult)&gt;</code>
+
+--------------------
+
+
+### isLimitedContactsAccessSupported()
+
+```typescript
+isLimitedContactsAccessSupported() => Promise<IsLimitedContactsAccessSupportedResult>
+```
+
+Checks if limited contacts access features are supported on the current platform.
+Returns true for iOS 18+ devices.
+
+**Returns:** <code>Promise&lt;[IsLimitedContactsAccessSupportedResult](#islimitedcontactsaccesssupportedresult)&gt;</code>
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -359,6 +389,20 @@ pickContact(options: PickContactOptions) => Promise<PickContactResult>
 | Prop             | Type                                   |
 | ---------------- | -------------------------------------- |
 | **`projection`** | <code>[Projection](#projection)</code> |
+
+
+#### RequestLimitedContactsAccessResult
+
+| Prop           | Type                          | Description                                    |
+| -------------- | ----------------------------- | ---------------------------------------------- |
+| **`contacts`** | <code>ContactPayload[]</code> | Array of contacts that were granted access to. |
+
+
+#### IsLimitedContactsAccessSupportedResult
+
+| Prop            | Type                 | Description                                             |
+| --------------- | -------------------- | ------------------------------------------------------- |
+| **`supported`** | <code>boolean</code> | Whether limited contacts access features are supported. |
 
 
 ### Type Aliases

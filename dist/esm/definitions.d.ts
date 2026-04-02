@@ -10,6 +10,18 @@ export interface ContactsPlugin {
     createContact(options: CreateContactOptions): Promise<CreateContactResult>;
     deleteContact(options: DeleteContactOptions): Promise<void>;
     pickContact(options: PickContactOptions): Promise<PickContactResult>;
+    /**
+     * Shows the contact access picker to request access to additional contacts.
+     * Only available on iOS 18+.
+     *
+     * Returns an array of full contact objects that the user granted access to.
+     */
+    requestLimitedContactsAccess(): Promise<RequestLimitedContactsAccessResult>;
+    /**
+     * Checks if limited contacts access features are supported on the current platform.
+     * Returns true for iOS 18+ devices.
+     */
+    isLimitedContactsAccessSupported(): Promise<IsLimitedContactsAccessSupportedResult>;
 }
 export declare enum PhoneType {
     Home = "home",
@@ -283,4 +295,16 @@ export interface PickContactOptions {
 }
 export interface PickContactResult {
     contact: ContactPayload;
+}
+export interface RequestLimitedContactsAccessResult {
+    /**
+     * Array of contacts that were granted access to.
+     */
+    contacts: ContactPayload[];
+}
+export interface IsLimitedContactsAccessSupportedResult {
+    /**
+     * Whether limited contacts access features are supported.
+     */
+    supported: boolean;
 }

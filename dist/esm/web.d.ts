@@ -8,4 +8,6 @@ export declare class ContactsWeb extends WebPlugin implements Definitions.Contac
     createContact(): Promise<Definitions.CreateContactResult>;
     deleteContact(): Promise<void>;
     pickContact(): Promise<Definitions.PickContactResult>;
+    requestLimitedContactsAccess(): Promise<Definitions.RequestLimitedContactsAccessResult>;
+    isLimitedContactsAccessSupported(): Promise<Definitions.IsLimitedContactsAccessSupportedResult>;
 }

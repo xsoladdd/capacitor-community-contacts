@@ -21,5 +21,13 @@ export class ContactsWeb extends WebPlugin {
     async pickContact() {
         throw this.unimplemented('Not implemented on web.');
     }
+    async requestLimitedContactsAccess() {
+        throw this.unimplemented('Not implemented on web.');
+    }
+    async isLimitedContactsAccessSupported() {
+        return {
+            supported: false,
+        };
+    }
 }
 //# sourceMappingURL=web.js.map

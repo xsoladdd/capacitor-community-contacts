@@ -75,6 +75,14 @@ var capacitorContacts = (function (exports, core) {
         async pickContact() {
             throw this.unimplemented('Not implemented on web.');
         }
+        async requestLimitedContactsAccess() {
+            throw this.unimplemented('Not implemented on web.');
+        }
+        async isLimitedContactsAccessSupported() {
+            return {
+                supported: false,
+            };
+        }
     }
 
     var web = /*#__PURE__*/Object.freeze({

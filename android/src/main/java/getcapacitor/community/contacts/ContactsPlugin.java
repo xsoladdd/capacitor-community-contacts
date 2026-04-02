@@ -72,6 +72,12 @@ public class ContactsPlugin extends Plugin {
             case "pickContact":
                 pickContact(call);
                 break;
+            case "requestLimitedContactsAccess":
+                requestLimitedContactsAccess(call);
+                break;
+            case "isLimitedContactsAccessSupported":
+                isLimitedContactsAccessSupported(call);
+                break;
         }
     }
 
@@ -244,6 +250,18 @@ public class ContactsPlugin extends Plugin {
             result.put("contact", contact.getJSObject());
             call.resolve(result);
         }
+    }
+
+    @PluginMethod
+    public void requestLimitedContactsAccess(PluginCall call) {
+        call.reject("Limited contacts access is not supported on Android.");
+    }
+
+    @PluginMethod
+    public void isLimitedContactsAccessSupported(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("supported", false);
+        call.resolve(result);
     }
 
     private void rejectCall(PluginCall call, Exception exception) {

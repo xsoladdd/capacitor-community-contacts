@@ -12,12 +12,13 @@ enum CallingMethod {
 }
 
 @objc(ContactsPlugin)
-public class ContactsPlugin: CAPPlugin, CNContactPickerDelegate {
+public class ContactsPlugin: CAPPlugin {
     private let implementation = Contacts()
 
     private var callingMethod: CallingMethod?
 
     private var pickContactCallbackId: String?
+    private var activeContactPickerDelegate: NSObject?
 
     @objc override public func checkPermissions(_ call: CAPPluginCall) {
         let permissionState: String
@@ -186,36 +187,150 @@ public class ContactsPlugin: CAPPlugin, CNContactPickerDelegate {
             requestContactsPermission(call, CallingMethod.PickContact)
         } else {
             DispatchQueue.main.async {
-                // Save the call and its callback id
                 self.bridge?.saveCall(call)
                 self.pickContactCallbackId = call.callbackId
 
-                // Initialize the contact picker
                 let contactPicker = CNContactPickerViewController()
-                // Mark current class as the delegate class,
-                // this will make the callback `contactPicker` actually work.
-                contactPicker.delegate = self
-                // Present (open) the native contact picker.
+                let delegate = SingleContactPickerDelegate(plugin: self, callbackId: call.callbackId)
+                self.activeContactPickerDelegate = delegate
+                contactPicker.delegate = delegate
+
                 self.bridge?.viewController?.present(contactPicker, animated: true)
             }
         }
     }
 
-    public func contactPicker(_ picker: CNContactPickerViewController, didSelect selectedContact: CNContact) {
-        let call = self.bridge?.savedCall(withID: self.pickContactCallbackId ?? "")
+    private class SingleContactPickerDelegate: NSObject, CNContactPickerDelegate {
+        private weak var plugin: ContactsPlugin?
+        private let callbackId: String
 
-        guard let call = call else {
-            return
+        init(plugin: ContactsPlugin, callbackId: String) {
+            self.plugin = plugin
+            self.callbackId = callbackId
         }
 
-        let contact = ContactPayload(selectedContact.identifier)
+        public func contactPicker(_ picker: CNContactPickerViewController, didSelect selectedContact: CNContact) {
+            picker.dismiss(animated: true)
 
-        contact.fillData(selectedContact)
+            guard let plugin = self.plugin else { return }
+            guard let call = plugin.bridge?.savedCall(withID: self.callbackId) else { return }
 
-        call.resolve([
-            "contact": contact.getJSObject()
-        ])
+            let projectionInput = GetContactsProjectionInput(call.getObject("projection") ?? JSObject())
+            if let projected = plugin.implementation.getContact(selectedContact.identifier, projectionInput) {
+                call.resolve([
+                    "contact": projected.getJSObject()
+                ])
+            } else {
+                let contact = ContactPayload(selectedContact.identifier)
+                contact.fillData(selectedContact)
+                call.resolve([
+                    "contact": contact.getJSObject()
+                ])
+            }
 
-        self.bridge?.releaseCall(call)
+            plugin.bridge?.releaseCall(call)
+            plugin.pickContactCallbackId = nil
+            plugin.activeContactPickerDelegate = nil
+        }
+
+        public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+            guard let plugin = self.plugin else { return }
+            guard let call = plugin.bridge?.savedCall(withID: self.callbackId) else { return }
+
+            call.reject("User cancelled contact selection")
+            plugin.bridge?.releaseCall(call)
+            plugin.pickContactCallbackId = nil
+            plugin.activeContactPickerDelegate = nil
+        }
+    }
+
+    private class MultiContactPickerDelegate: NSObject, CNContactPickerDelegate {
+        private weak var plugin: ContactsPlugin?
+        private let callbackId: String
+
+        init(plugin: ContactsPlugin, callbackId: String) {
+            self.plugin = plugin
+            self.callbackId = callbackId
+        }
+
+        public func contactPicker(_ picker: CNContactPickerViewController, didSelect contacts: [CNContact]) {
+            picker.dismiss(animated: true)
+
+            guard let plugin = self.plugin else { return }
+            guard let call = plugin.bridge?.savedCall(withID: self.callbackId) else { return }
+
+            var contactsArray: [JSObject] = []
+            for selectedContact in contacts {
+                let contact = ContactPayload(selectedContact.identifier)
+                contact.fillData(selectedContact)
+                contactsArray.append(contact.getJSObject())
+            }
+
+            call.resolve([
+                "contacts": contactsArray
+            ])
+
+            plugin.bridge?.releaseCall(call)
+            plugin.pickContactCallbackId = nil
+            plugin.activeContactPickerDelegate = nil
+        }
+
+        public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+            guard let plugin = self.plugin else { return }
+            guard let call = plugin.bridge?.savedCall(withID: self.callbackId) else { return }
+
+            call.resolve([
+                "contacts": []
+            ])
+            plugin.bridge?.releaseCall(call)
+            plugin.pickContactCallbackId = nil
+            plugin.activeContactPickerDelegate = nil
+        }
+    }
+
+    @objc func requestLimitedContactsAccess(_ call: CAPPluginCall) {
+        if #available(iOS 18.0, *) {
+            let authorizationStatus = CNContactStore.authorizationStatus(for: .contacts)
+
+            switch authorizationStatus {
+            case .limited, .notDetermined:
+                self.presentContactAccessPicker(call)
+            case .authorized:
+                call.resolve([
+                    "contacts": []
+                ])
+            case .restricted, .denied:
+                call.reject("Contact access is denied or restricted.")
+            @unknown default:
+                call.reject("Unknown authorization status.")
+            }
+        } else {
+            call.reject("Limited contacts access is not supported on this iOS version. iOS 18+ required.")
+        }
+    }
+
+    @available(iOS 18.0, *)
+    private func presentContactAccessPicker(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let contactPicker = CNContactPickerViewController()
+            let delegate = MultiContactPickerDelegate(plugin: self, callbackId: call.callbackId)
+            self.activeContactPickerDelegate = delegate
+            contactPicker.delegate = delegate
+
+            contactPicker.predicateForEnablingContact = NSPredicate(value: true)
+
+            self.bridge?.saveCall(call)
+            self.pickContactCallbackId = call.callbackId
+
+            self.bridge?.viewController?.present(contactPicker, animated: true)
+        }
+    }
+
+    @objc func isLimitedContactsAccessSupported(_ call: CAPPluginCall) {
+        if #available(iOS 18.0, *) {
+            call.resolve(["supported": true])
+        } else {
+            call.resolve(["supported": false])
+        }
     }
 }

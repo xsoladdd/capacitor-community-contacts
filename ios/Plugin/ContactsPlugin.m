@@ -11,4 +11,6 @@ CAP_PLUGIN(ContactsPlugin, "Contacts",
            CAP_PLUGIN_METHOD(createContact, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(deleteContact, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(pickContact, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(requestLimitedContactsAccess, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(isLimitedContactsAccessSupported, CAPPluginReturnPromise);
 )
